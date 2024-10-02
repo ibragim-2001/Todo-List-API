@@ -3,5 +3,5 @@ from .views import *
 
 
 urlpatterns = [
-    path('tasks-list/', Todos.as_view())
+    path('todos/', TodosView.as_view()),
 ]
