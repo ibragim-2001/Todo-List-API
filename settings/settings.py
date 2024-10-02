@@ -75,6 +75,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# REST_FRAMEWORK = {
+#     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+#     'DEFAULT_LIMIT': 10,
+#     'MAX_LIMIT': 10,
+# }
+
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'

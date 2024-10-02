@@ -4,21 +4,19 @@ from rest_framework import status
 
 from .serializers import *
 from .models import *
+from .services.custom_pagination import CustomPagination
 
 
 class TodosView(APIView):
 
     def get(self, request):
-        """
-        Сделать пагинацию максимум 10 туду
-        GET /todos?page=1&limit=10
-        :param request:
-        :return:
-        """
         items = TodoItem.objects.all()
+        paginator = CustomPagination()
+        paginated_items = paginator.paginate_queryset(items, request)
+
         try:
-            serializer = TodoItemSerializer(items, many=True)
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
+            serializer = TodoItemSerializer(paginated_items, many=True)
+            return paginator.get_paginated_response(serializer.data)
         except Exception as e:
             return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(data=serializer.errors, status=status.HTTP_404_NOT_FOUND)
@@ -36,11 +34,27 @@ class TodosView(APIView):
 
 class TodoItemVIew(APIView):
 
-    def delete(self, id):
+    def put(self, request, pk):
         try:
-            todo = TodoItem.objects.get(pk=id)
+            todo = TodoItem.objects.get(pk=pk)
+        except TodoItem.DoesNotExist:
+            return Response(data={'message': 'Todo item not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TodoItemSerializer(todo, data=request.data)
+        if serializer.is_valid():
+            try:
+                serializer.save()
+                return Response(data=serializer.data, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data=serializer.errors, status=status.HTTP_403_FORBIDDEN)
+
+    def delete(self, request, pk):
+        try:
+            todo = TodoItem.objects.get(pk=pk)
             todo.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(data={'message': str(f'The task "{todo.title}" successfully deleted')}, status=status.HTTP_204_NO_CONTENT)
+        except TodoItem.DoesNotExist:
+            return Response(data={'message': 'Todo item not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response(data=serializer.errors, status=status.HTTP_204_NO_CONTENT)
