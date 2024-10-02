@@ -3,6 +3,7 @@ from rest_framework.response import Response
 
 
 class CustomPagination(BasePagination):
+
     def paginate_queryset(self, queryset, request, view=None):
         self.request = request
 
