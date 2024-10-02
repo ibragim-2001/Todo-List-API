@@ -1,22 +1,28 @@
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
 from .serializers import *
 from .models import *
-from .services.custom_pagination import CustomPagination
 
 
 class TodosView(APIView):
 
     def get(self, request):
         items = TodoItem.objects.all()
-        paginator = CustomPagination()
-        paginated_items = paginator.paginate_queryset(items, request)
 
+        paginator = PageNumberPagination()
+        paginator.page_size = request.query_params.get('limit', 10)
+        result_page = paginator.paginate_queryset(items, request)
         try:
-            serializer = TodoItemSerializer(paginated_items, many=True)
-            return paginator.get_paginated_response(serializer.data)
+            serializer = TodoItemSerializer(result_page, many=True)
+            return paginator.get_paginated_response({
+                'data': serializer.data,
+                'page': paginator.page.number,
+                'limit': paginator.page_size,
+                'total': paginator.page.paginator.count,
+            })
         except Exception as e:
             return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         return Response(data=serializer.errors, status=status.HTTP_404_NOT_FOUND)
