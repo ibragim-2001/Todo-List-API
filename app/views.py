@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,9 +9,10 @@ from .models import *
 
 
 class TodosView(APIView):
+    permission_classes = (IsAuthenticated, )
 
     def get(self, request):
-        items = TodoItem.objects.all()
+        items = TodoItem.objects.filter(user=request.user)
 
         paginator = PageNumberPagination()
         paginator.page_size = request.query_params.get('limit', 10)
@@ -31,7 +33,7 @@ class TodosView(APIView):
         serializer = TodoItemSerializer(data=request.data)
         if serializer.is_valid():
             try:
-                serializer.save()
+                serializer.save(user=request.user)
                 return Response(data=serializer.data, status=status.HTTP_201_CREATED)
             except Exception as e:
                 return Response(data={'message': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -39,10 +41,11 @@ class TodosView(APIView):
 
 
 class TodoItemVIew(APIView):
+    permission_classes = (IsAuthenticated,)
 
     def put(self, request, pk):
         try:
-            todo = TodoItem.objects.get(pk=pk)
+            todo = TodoItem.objects.get(pk=pk, user=request.user)
         except TodoItem.DoesNotExist:
             return Response(data={'message': 'Todo item not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -57,7 +60,7 @@ class TodoItemVIew(APIView):
 
     def delete(self, request, pk):
         try:
-            todo = TodoItem.objects.get(pk=pk)
+            todo = TodoItem.objects.get(pk=pk, user=request.user)
             todo.delete()
             return Response(data={'message': str(f'The task "{todo.title}" successfully deleted')}, status=status.HTTP_204_NO_CONTENT)
         except TodoItem.DoesNotExist:
